@@ -2,6 +2,15 @@
 
 Proyecto: `android/Jornadas`. Se mantuvo la arquitectura (Compose → ViewModel → Repository → Room/Retrofit) y las versiones de Gradle, AGP y Kotlin.
 
+# Branches
+
+* Main: contiene el trabajo ajustado a la consigna del readme
+* joa/refactor: contiene un trabajo adicional sobre codigo que podía ser mejorado pero no lo solicitaba explicitamente la consigna, es un plus.
+* dev: fue la branch de trabajo para no afectar el codigo original mientras se desarrollaba.
+
+Existieron branches auxiliares por "features", las cuales se mergeaban a dev a medida que se realizaba el trabajo.
+
+
 ## Build
 
 - Se agregó `com.squareup.okhttp3:okhttp:4.12.0`. Retrofit 2.11 trae OkHttp 3.x, que no tiene `toMediaType()` ni `toResponseBody()`, y `lab/ServicioLocal.kt` no compilaba. Se mantiene `converter-gson` porque lo usa `Servicios.kt`.
