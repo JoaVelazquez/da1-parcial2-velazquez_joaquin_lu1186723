@@ -2,6 +2,10 @@
 
 Proyecto: `android/Jornadas`. Se mantuvo la arquitectura (Compose → ViewModel → Repository → Room/Retrofit) y las versiones de Gradle, AGP y Kotlin.
 
+## Build
+
+- Se agregó `com.squareup.okhttp3:okhttp:4.12.0`. Retrofit 2.11 trae OkHttp 3.x, que no tiene `toMediaType()` ni `toResponseBody()`, y `lab/ServicioLocal.kt` no compilaba. Se mantiene `converter-gson` porque lo usa `Servicios.kt`.
+
 ## Defectos encontrados en la versión entregada
 
 | Defecto | Dónde | Efecto |
@@ -90,6 +94,9 @@ gradlew.bat testDebugUnitTest
 - Una respuesta vacía se toma como válida porque la organización publica instantáneas completas. Por eso v4 borra también las marcas.
 - Mejora futura: guardar Mi agenda en una tabla aparte (`agenda(charlaId)`) para no mezclar datos del servidor con datos del usuario.
 
-## Uso de IA
+## Uso de IA y notas adicionales
 
 Claude Code. Revisé cada cambio, compilé y corrí los tests.
+Mi Laptop tiene pocos recursos y correr el emulador causa crashes de forma muy seguida. Por ello opte guiarme con unit tests mas que nada, ya que no puedo jugar tanto con la aplicación como me gustaría.
+Nota de los PRs, commits y control de versiones en general: Es mi forma usual de desarrollo, genero branches especificas para cada feature que luego mergeo a dev.
+Una vez termino un grupo de features que consideraría "estable", paso los cambios a Main. A pesar de ser el único contribuidor del repositorio, son prácticas que tengo muy arraigadas y no afectan al resultado final. Misma explicacion para el formato de mis PRs, para el cual tengo un template personal.
