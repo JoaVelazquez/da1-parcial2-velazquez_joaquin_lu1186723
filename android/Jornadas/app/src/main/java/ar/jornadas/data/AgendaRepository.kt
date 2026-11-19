@@ -18,23 +18,21 @@ class AgendaRepository(private val api: ProgramaApi, private val db: Archivo) {
     // true solo la primera vez en el proceso
     fun reclamarCargaAutomatica(): Boolean = !cargaAutomaticaHecha.getAndSet(true)
 
-    // Cada respuesta es el programa completo: reemplaza todo de una vez
+    // Cada respuesta es el programa completo. Mi agenda está en otra tabla,
+    // así que las marcas hechas durante la descarga no se tocan.
     suspend fun sincronizar() {
-        val fichas = api.consultar().map { it.aCharla() }
+        val fichas = api.consultar().map { it.aFicha() }
         db.withTransaction {
-            // Las marcas se leen recién ahora para respetar las hechas durante la descarga
-            val marcadas = dao.idsFavoritas().toSet()
             dao.borrarTodo()
-            dao.insertar(aplicarMarcas(fichas, marcadas))
+            dao.insertar(fichas)
+            dao.quitarMarcasRetiradas()
             dao.guardarEdicion(Edicion(actualizada = System.currentTimeMillis()))
         }
     }
 
-    suspend fun cambiarFavorita(id: String) = dao.alternar(id)
+    suspend fun cambiarFavorita(id: String) {
+        db.withTransaction { if (dao.desmarcar(id) == 0) dao.marcar(id) }
+    }
 }
 
-internal fun FichaRemota.aCharla() = Charla(id, title, track, day, time, room, speaker, summary)
-
-// Solo conservan la marca las charlas que siguen en el programa
-internal fun aplicarMarcas(fichas: List<Charla>, marcadas: Set<String>): List<Charla> =
-    fichas.map { it.copy(favorita = it.id in marcadas) }
+internal fun FichaRemota.aFicha() = FichaGuardada(id, title, track, day, time, room, speaker, summary)
