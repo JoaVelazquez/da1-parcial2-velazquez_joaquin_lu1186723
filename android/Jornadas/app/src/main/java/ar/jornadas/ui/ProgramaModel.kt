@@ -2,30 +2,53 @@ package ar.jornadas.ui
 
 import android.app.Application
 import androidx.lifecycle.*
-import ar.jornadas.Servicios
+import ar.jornadas.App
+import ar.jornadas.data.Cartelera
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.io.IOException
 
-class ProgramaModel(app: Application) : AndroidViewModel(app) {
-    private val servicios = Servicios(app)
+class ProgramaModel(app: Application, private val estado: SavedStateHandle) : AndroidViewModel(app) {
+    private val servicios = (app as App).servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
-    val charlas = repo.programa.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val dia = MutableStateFlow(0)
-    val aviso = MutableStateFlow("")
-    val cargando = MutableStateFlow(false)
+
+    // null mientras la base todavía no respondió
+    val cartelera: StateFlow<Cartelera?> = repo.cartelera.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // En SavedStateHandle: sobreviven a rotar y a que Android mate el proceso
+    val dia = estado.getStateFlow("dia", 0)
+    val tema = estado.getStateFlow("tema", "Todos")
+    fun elegirDia(valor: Int) { estado["dia"] = valor }
+    fun elegirTema(valor: String) { estado["tema"] = valor }
+
+    private val _fallo = MutableStateFlow(false)
+    val fallo = _fallo.asStateFlow()
+    private val _cargando = MutableStateFlow(false)
+    val cargando = _cargando.asStateFlow()
+
+    private var descarga: Job? = null
+
+    // Una sola carga automática por proceso: rotar o volver de Inicio no suma
+    fun cargaAutomatica() {
+        if (repo.reclamarCargaAutomatica()) recargar()
+    }
 
     fun recargar() {
-        viewModelScope.launch {
-            cargando.value = true
-            aviso.value = ""
+        if (descarga?.isActive == true) return // ya hay una petición en curso
+        descarga = viewModelScope.launch {
+            _cargando.value = true
             try {
                 repo.sincronizar()
-            } catch (e: IOException) {
-                aviso.value = "No se pudo consultar el programa"
+                _fallo.value = false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Sin red, error HTTP, JSON roto o error de base: se sigue con lo guardado
+                _fallo.value = true
             } finally {
-                cargando.value = false
+                _cargando.value = false
             }
         }
     }
