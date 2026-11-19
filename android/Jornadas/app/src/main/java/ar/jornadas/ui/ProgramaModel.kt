@@ -1,19 +1,25 @@
 package ar.jornadas.ui
 
-import android.app.Application
 import androidx.lifecycle.*
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import ar.jornadas.App
+import ar.jornadas.data.AgendaRepository
 import ar.jornadas.data.Cartelera
 import ar.jornadas.data.Charla
+import ar.jornadas.lab.ServicioLocal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class ProgramaModel(app: Application, private val estado: SavedStateHandle) : AndroidViewModel(app) {
-    private val servicios = (app as App).servicios
-    val mesa = servicios.mesa
-    private val repo = servicios.agenda
+// Recibe sus dependencias: no sabe cómo se crean Room ni Retrofit
+class ProgramaModel(
+    private val repo: AgendaRepository,
+    val mesa: ServicioLocal,
+    private val estado: SavedStateHandle,
+) : ViewModel() {
 
     // null mientras la base todavía no respondió
     val cartelera: StateFlow<Cartelera?> = repo.cartelera.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -60,4 +66,13 @@ class ProgramaModel(app: Application, private val estado: SavedStateHandle) : An
     }
 
     fun marcar(id: String) { viewModelScope.launch { repo.cambiarFavorita(id) } }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val servicios = (this[APPLICATION_KEY] as App).servicios
+                ProgramaModel(servicios.agenda, servicios.mesa, createSavedStateHandle())
+            }
+        }
+    }
 }

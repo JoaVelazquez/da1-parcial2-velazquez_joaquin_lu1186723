@@ -7,7 +7,7 @@ import androidx.activity.viewModels
 import ar.jornadas.ui.*
 
 class MainActivity : ComponentActivity() {
-    private val model: ProgramaModel by viewModels()
+    private val model: ProgramaModel by viewModels { ProgramaModel.Factory }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null && intent.hasExtra("servicio_disponible")) {
