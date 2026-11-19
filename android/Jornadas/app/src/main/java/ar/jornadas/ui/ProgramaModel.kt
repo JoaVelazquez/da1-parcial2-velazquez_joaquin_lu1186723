@@ -3,29 +3,37 @@ package ar.jornadas.ui
 import android.app.Application
 import androidx.lifecycle.*
 import ar.jornadas.App
+import ar.jornadas.data.Cartelera
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 class ProgramaModel(app: Application) : AndroidViewModel(app) {
     private val servicios = (app as App).servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
-    val charlas = repo.cartelera.map { it.charlas }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // null mientras la base todavía no respondió
+    val cartelera: StateFlow<Cartelera?> = repo.cartelera.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val dia = MutableStateFlow(0)
-    val aviso = MutableStateFlow("")
-    val cargando = MutableStateFlow(false)
+    private val _fallo = MutableStateFlow(false)
+    val fallo = _fallo.asStateFlow()
+    private val _cargando = MutableStateFlow(false)
+    val cargando = _cargando.asStateFlow()
 
     fun recargar() {
         viewModelScope.launch {
-            cargando.value = true
-            aviso.value = ""
+            _cargando.value = true
             try {
                 repo.sincronizar()
-            } catch (e: IOException) {
-                aviso.value = "No se pudo consultar el programa"
+                _fallo.value = false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Sin red, error HTTP, JSON roto o error de base: se sigue con lo guardado
+                _fallo.value = true
             } finally {
-                cargando.value = false
+                _cargando.value = false
             }
         }
     }
