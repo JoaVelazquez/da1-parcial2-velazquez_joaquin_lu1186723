@@ -5,6 +5,7 @@ import androidx.lifecycle.*
 import ar.jornadas.App
 import ar.jornadas.data.Cartelera
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -21,8 +22,16 @@ class ProgramaModel(app: Application) : AndroidViewModel(app) {
     private val _cargando = MutableStateFlow(false)
     val cargando = _cargando.asStateFlow()
 
+    private var descarga: Job? = null
+
+    // Una sola carga automática por proceso: rotar o volver de Inicio no suma
+    fun cargaAutomatica() {
+        if (repo.reclamarCargaAutomatica()) recargar()
+    }
+
     fun recargar() {
-        viewModelScope.launch {
+        if (descarga?.isActive == true) return // ya hay una petición en curso
+        descarga = viewModelScope.launch {
             _cargando.value = true
             try {
                 repo.sincronizar()
