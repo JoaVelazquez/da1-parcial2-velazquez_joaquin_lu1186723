@@ -14,11 +14,8 @@ class MainActivity : ComponentActivity() {
             model.mesa.disponible = intent.getBooleanExtra("servicio_disponible", true)
             intent.removeExtra("servicio_disponible")
         }
+        // Después de aplicar el extra, para que la primera petición ya lo respete
+        model.cargaAutomatica()
         setContent { Portada(model) }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        model.recargar()
     }
 }
