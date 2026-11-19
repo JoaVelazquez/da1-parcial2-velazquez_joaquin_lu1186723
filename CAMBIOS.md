@@ -63,6 +63,11 @@ Así:
 2. **Sincronización atómica** con transacción.
 3. **Se borró `legacy/AgendaImpresa.kt`**, código muerto.
 
+### Rama `joa/refactor` (no va a `main`)
+
+4. **Filtrado en el ViewModel.** La regla de día y tema estaba dentro de `Catalogo`. Ahora es una función pura, `filtrar()` (`ui/Filtros.kt`), y el ViewModel expone `visibles`. La pantalla solo dibuja. Test: `FiltrosTest` (Día 2 + Datos da 23 y 24).
+5. **Dependencias por factory.** `ProgramaModel` era un `AndroidViewModel` que casteaba la `Application` para buscar sus servicios. Ahora es un `ViewModel` común que recibe el repositorio, la Mesa y el `SavedStateHandle` por constructor (`ProgramaModel.Factory`). Así se puede crear en un test sin Android.
+
 ## Evidencia de validación
 
 **Tests unitarios** (`app/src/test/.../AplicarMarcasTest.kt`): v1→v2 conserva la marca con título y sala nuevos; v3 retira la 11 y la 90 entra sin marca; v4 vacía es válida; una marca quitada durante la petición no vuelve.
