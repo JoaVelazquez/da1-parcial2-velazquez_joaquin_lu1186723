@@ -9,14 +9,20 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class ProgramaModel(app: Application) : AndroidViewModel(app) {
+class ProgramaModel(app: Application, private val estado: SavedStateHandle) : AndroidViewModel(app) {
     private val servicios = (app as App).servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
 
     // null mientras la base todavía no respondió
     val cartelera: StateFlow<Cartelera?> = repo.cartelera.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val dia = MutableStateFlow(0)
+
+    // En SavedStateHandle: sobreviven a rotar y a que Android mate el proceso
+    val dia = estado.getStateFlow("dia", 0)
+    val tema = estado.getStateFlow("tema", "Todos")
+    fun elegirDia(valor: Int) { estado["dia"] = valor }
+    fun elegirTema(valor: String) { estado["tema"] = valor }
+
     private val _fallo = MutableStateFlow(false)
     val fallo = _fallo.asStateFlow()
     private val _cargando = MutableStateFlow(false)
