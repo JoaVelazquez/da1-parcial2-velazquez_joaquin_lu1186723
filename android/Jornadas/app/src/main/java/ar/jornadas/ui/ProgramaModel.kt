@@ -11,7 +11,7 @@ class ProgramaModel(app: Application) : AndroidViewModel(app) {
     private val servicios = (app as App).servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
-    val charlas = repo.programa.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val charlas = repo.cartelera.map { it.charlas }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val dia = MutableStateFlow(0)
     val aviso = MutableStateFlow("")
     val cargando = MutableStateFlow(false)
