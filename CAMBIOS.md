@@ -67,10 +67,16 @@ Así:
 
 4. **Filtrado en el ViewModel.** La regla de día y tema estaba dentro de `Catalogo`. Ahora es una función pura, `filtrar()` (`ui/Filtros.kt`), y el ViewModel expone `visibles`. La pantalla solo dibuja. Test: `FiltrosTest` (Día 2 + Datos da 23 y 24).
 5. **Dependencias por factory.** `ProgramaModel` era un `AndroidViewModel` que casteaba la `Application` para buscar sus servicios. Ahora es un `ViewModel` común que recibe el repositorio, la Mesa y el `SavedStateHandle` por constructor (`ProgramaModel.Factory`). Así se puede crear en un test sin Android.
+6. **Mi agenda en una tabla propia.** `charlas` (que pasa a llamarse `FichaGuardada` en el código) solo guarda lo que manda el servidor, y las marcas del usuario van a `agenda(charlaId)`. La UI recibe `Charla` con `favorita` calculada por un `LEFT JOIN`, así que las pantallas no cambian.
+   - Sincronizar queda más simple: reemplaza `charlas` y borra las marcas de las charlas retiradas. Ya no lee ni vuelve a aplicar favoritas, y una marca hecha durante la descarga queda intacta porque esa tabla no se toca.
+   - Solo se puede marcar una charla que está en el programa (`INSERT ... SELECT`). Así no quedan marcas huérfanas que reaparezcan si la charla vuelve.
+   - Migración `2 → 3`: crea `agenda`, copia las marcas y rehace `charlas` sin la columna `favorita` (el SQLite de API 26 no tiene `DROP COLUMN`). Room encadena `1 → 2 → 3`.
+   - Test `MigracionAgendaTest`: corre la migración real contra SQLite (`sqlite-jdbc`, solo para tests) y compara el esquema con el de Room v3. También prueba v3 (se va la 11 y entra la 90 sin marca), que una charla retirada vuelva sin marcar y que no se puedan marcar charlas inexistentes. Reemplaza a `AplicarMarcasTest`.
+   - **Sin probar en un dispositivo:** la apertura real de Room después de migrar.
 
 ## Evidencia de validación
 
-**Tests unitarios** (`app/src/test/.../AplicarMarcasTest.kt`): v1→v2 conserva la marca con título y sala nuevos; v3 retira la 11 y la 90 entra sin marca; v4 vacía es válida; una marca quitada durante la petición no vuelve.
+**Tests unitarios** (`app/src/test/.../AplicarMarcasTest.kt`): v1→v2 conserva la marca con título y sala nuevos; v3 retira la 11 y la 90 entra sin marca; v4 vacía es válida; una marca quitada durante la petición no vuelve. En `joa/refactor` lo reemplazan `MigracionAgendaTest` y `FiltrosTest`.
 
 ```
 gradlew.bat testDebugUnitTest
@@ -97,7 +103,7 @@ gradlew.bat testDebugUnitTest
 ## Decisiones y mejoras futuras
 
 - Una respuesta vacía se toma como válida porque la organización publica instantáneas completas. Por eso v4 borra también las marcas.
-- Mejora futura: guardar Mi agenda en una tabla aparte (`agenda(charlaId)`) para no mezclar datos del servidor con datos del usuario.
+- Mejora futura: guardar Mi agenda en una tabla aparte (`agenda(charlaId)`) para no mezclar datos del servidor con datos del usuario. Hecho en `joa/refactor` (refactor 6).
 
 ## Uso de IA y notas adicionales
 
