@@ -18,9 +18,9 @@ fun Catalogo(model: ProgramaModel, abrir: (String) -> Unit) {
     val cartelera by model.cartelera.collectAsStateWithLifecycle()
     val fallo by model.fallo.collectAsStateWithLifecycle()
     val cargando by model.cargando.collectAsStateWithLifecycle()
-    Selector(listOf("Ambos días", "Día 1", "Día 2"), dia, model::elegirDia)
-    val temas = listOf("Todos", "Android", "Datos", "Calidad")
-    Selector(temas, temas.indexOf(tema)) { model.elegirTema(temas[it]) }
+    val visibles by model.visibles.collectAsStateWithLifecycle()
+    Selector(DIAS, dia, model::elegirDia)
+    Selector(TEMAS, TEMAS.indexOf(tema)) { model.elegirTema(TEMAS[it]) }
     TextButton(onClick = model::recargar) { Text("Actualizar") }
     if (cargando) LinearProgressIndicator(Modifier.fillMaxWidth())
     val guardado = cartelera ?: return
@@ -33,9 +33,6 @@ fun Catalogo(model: ProgramaModel, abrir: (String) -> Unit) {
         !guardado.descargada -> Text("Descargando el programa…")
         guardado.charlas.isEmpty() -> Text("Sin charlas programadas.")
         else -> {
-            val visibles = guardado.charlas.filter {
-                (dia == 0 || it.dia == dia) && (tema == "Todos" || it.tema == tema)
-            }
             if (visibles.isEmpty()) Text("No hay charlas con estos filtros.")
             Grilla(visibles, abrir)
         }

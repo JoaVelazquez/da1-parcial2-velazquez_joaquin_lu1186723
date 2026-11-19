@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.*
 import ar.jornadas.App
 import ar.jornadas.data.Cartelera
+import ar.jornadas.data.Charla
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -19,9 +20,14 @@ class ProgramaModel(app: Application, private val estado: SavedStateHandle) : An
 
     // En SavedStateHandle: sobreviven a rotar y a que Android mate el proceso
     val dia = estado.getStateFlow("dia", 0)
-    val tema = estado.getStateFlow("tema", "Todos")
+    val tema = estado.getStateFlow("tema", TODOS)
     fun elegirDia(valor: Int) { estado["dia"] = valor }
     fun elegirTema(valor: String) { estado["tema"] = valor }
+
+    // Programa con los filtros aplicados
+    val visibles: StateFlow<List<Charla>> =
+        combine(cartelera, dia, tema) { guardado, d, t -> filtrar(guardado?.charlas.orEmpty(), d, t) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _fallo = MutableStateFlow(false)
     val fallo = _fallo.asStateFlow()
